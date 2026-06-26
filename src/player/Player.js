@@ -167,6 +167,12 @@ export class Player {
     this._syncCamera();
   }
 
+  // Restore health, capped at max.
+  heal(amount) {
+    if (!this.alive) return;
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
+
   takeDamage(amount) {
     if (!this.alive) return;
     this.health = Math.max(0, this.health - amount);

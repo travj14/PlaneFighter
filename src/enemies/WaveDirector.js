@@ -24,6 +24,8 @@ const WAVES = [
 
 const LASER_WAVE = 5;
 const REFILL_WAVES = new Set([3, 5, 8, 10]);
+const HEAL_WAVES = new Set([6]); // heal 50% of max health going into these waves
+const HEAL_FRACTION = 0.5;
 
 export class WaveDirector {
   constructor({ manager, hud, weapons, onWin }) {
@@ -66,6 +68,7 @@ export class WaveDirector {
     const bits = [];
     if (next === LASER_WAVE) bits.push('Laser unlocked');
     if (REFILL_WAVES.has(next)) bits.push('Ammo resupplied');
+    if (HEAL_WAVES.has(next)) bits.push('Health restored');
     const sub = bits.length ? bits.join(' · ') : 'Get ready';
     this.hud.showMessage(`WAVE ${next} OF ${WAVES.length}`, sub, time * 1000 - 200);
   }
@@ -81,6 +84,10 @@ export class WaveDirector {
 
     if (this.wave >= LASER_WAVE) this.weapons.unlockWeapon('LASER');
     if (REFILL_WAVES.has(this.wave)) this.weapons.refillAmmo();
+    if (HEAL_WAVES.has(this.wave)) {
+      const p = this.manager.player;
+      p.heal(p.maxHealth * HEAL_FRACTION);
+    }
   }
 
   update(dt) {
