@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlaneFighter</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0b0e13;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        color: #e8eef5;
+        user-select: none;
+      }
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+      canvas {
+        display: block;
+      }
+
+      /* ---- HUD ---- */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+      #reticle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 22px;
+        height: 22px;
+        transform: translate(-50%, -50%);
+      }
+      #reticle::before,
+      #reticle::after {
+        content: "";
+        position: absolute;
+        background: rgba(230, 240, 255, 0.85);
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+      }
+      #reticle::before {
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        transform: translateY(-50%);
+      }
+      #reticle::after {
+        left: 50%;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        transform: translateX(-50%);
+      }
+      #reticle .dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 3px;
+        height: 3px;
+        background: #ff5a4d;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .hud-corner {
+        position: absolute;
+        padding: 14px 18px;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+      }
+      #hud-bottom-left {
+        left: 0;
+        bottom: 0;
+      }
+      #hud-top-left {
+        left: 0;
+        top: 0;
+      }
+      #hud-top-right {
+        right: 0;
+        top: 0;
+        text-align: right;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #8aa0b8;
+      }
+      .stat-value {
+        font-size: 30px;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+      #health-bar-wrap {
+        width: 220px;
+        height: 14px;
+        margin-top: 4px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      #health-bar {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #4dff7a, #b6ff4d);
+        transition: width 0.1s linear;
+      }
+      #ammo .stat-value .reserve {
+        font-size: 18px;
+        font-weight: 400;
+        color: #8aa0b8;
+      }
+      #weapon-name {
+        font-size: 13px;
+        letter-spacing: 1px;
+        color: #cfe0f0;
+        margin-top: 2px;
+      }
+
+      /* weapon switcher bar (bottom center) */
+      #weapon-bar {
+        position: absolute;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        pointer-events: auto;
+      }
+      .weapon-slot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 6px;
+        background: rgba(12, 16, 22, 0.55);
+        color: #8aa0b8;
+        font-size: 15px;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+      .weapon-slot .key {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .weapon-slot.active {
+        color: #fff;
+        border-color: #b6ff4d;
+        background: rgba(80, 120, 30, 0.4);
+        box-shadow: 0 0 12px rgba(150, 255, 80, 0.25);
+      }
+      .weapon-slot.active .key {
+        border-color: #b6ff4d;
+        color: #b6ff4d;
+      }
+      .weapon-slot.locked {
+        opacity: 0.35;
+        filter: grayscale(0.6);
+      }
+      .weapon-slot.locked::after {
+        content: "🔒";
+        font-size: 11px;
+        margin-left: 2px;
+      }
+
+      /* center messages */
+      #center-msg {
+        position: absolute;
+        top: 38%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-size: 42px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      #center-msg .sub {
+        display: block;
+        font-size: 16px;
+        font-weight: 400;
+        letter-spacing: 2px;
+        margin-top: 8px;
+        color: #cfe0f0;
+      }
+
+      /* hit/damage flash */
+      #damage-flash {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(255, 0, 0, 0) 55%,
+          rgba(180, 0, 0, 0.55) 100%
+        );
+        opacity: 0;
+        transition: opacity 0.12s ease-out;
+      }
+
+      /* start / pause overlay */
+      #overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(8, 11, 16, 0.82);
+        backdrop-filter: blur(2px);
+        text-align: center;
+        cursor: pointer;
+      }
+      #overlay.hidden {
+        display: none;
+      }
+      #overlay h1 {
+        font-size: 58px;
+        letter-spacing: 6px;
+        font-weight: 800;
+        background: linear-gradient(90deg, #6fb7ff, #b6ff4d);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      #overlay .tag {
+        margin-top: 8px;
+        color: #8aa0b8;
+        letter-spacing: 2px;
+      }
+      #overlay .result {
+        margin-top: 18px;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        min-height: 30px;
+      }
+      #overlay .result.win {
+        color: #b6ff4d;
+      }
+      #overlay .result.lose {
+        color: #ff5a4d;
+      }
+      .mode-buttons {
+        margin-top: 26px;
+        display: flex;
+        gap: 18px;
+        justify-content: center;
+      }
+      .mode-btn {
+        width: 260px;
+        padding: 22px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #e8eef5;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.14s ease;
+      }
+      .mode-btn:hover {
+        border-color: #6fb7ff;
+        background: rgba(60, 110, 170, 0.25);
+        transform: translateY(-2px);
+      }
+      .mode-btn .mode-title {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 2px;
+      }
+      .mode-btn .mode-desc {
+        margin-top: 8px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #aebfd1;
+      }
+      #resume-btn {
+        margin-top: 22px;
+        font-size: 18px;
+        padding: 12px 28px;
+        border: 1px solid #b6ff4d;
+        border-radius: 8px;
+        background: rgba(80, 120, 30, 0.3);
+        color: #fff;
+        cursor: pointer;
+      }
+      #resume-btn.hidden {
+        display: none;
+      }
+      #overlay .controls {
+        margin-top: 30px;
+        color: #aebfd1;
+        font-size: 14px;
+        line-height: 1.9;
+        letter-spacing: 1px;
+      }
+      #overlay .controls b {
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div id="hud">
+      <div id="damage-flash"></div>
+
+      <div id="reticle"><span class="dot"></span></div>
+
+      <div id="hud-top-left" class="hud-corner">
+        <div class="stat-label">Wave</div>
+        <div class="stat-value" id="wave-value">1</div>
+      </div>
+
+      <div id="hud-top-right" class="hud-corner">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score-value">0</div>
+      </div>
+
+      <div id="hud-bottom-left" class="hud-corner">
+        <div class="stat-label">Health</div>
+        <div id="health-bar-wrap"><div id="health-bar"></div></div>
+        <div id="ammo" style="margin-top: 12px">
+          <div class="stat-label">Ammo</div>
+          <div class="stat-value">
+            <span id="ammo-mag">30</span><span class="reserve"
+              >/<span id="ammo-reserve">120</span></span
+            >
+          </div>
+          <div id="weapon-name">AR</div>
+        </div>
+      </div>
+
+      <div id="center-msg"></div>
+
+      <div id="weapon-bar">
+        <div class="weapon-slot active" data-weapon="AR">
+          <span class="key">1</span><span class="wname">AR</span>
+        </div>
+        <div class="weapon-slot" data-weapon="LASER">
+          <span class="key">2</span><span class="wname">Laser</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay">
+      <h1>PLANEFIGHTER</h1>
+      <div class="tag">HOLD THE GROUND. CLEAR THE SKY.</div>
+      <div id="result" class="result"></div>
+
+      <div class="mode-buttons">
+        <button class="mode-btn" data-mode="wave">
+          <div class="mode-title">WAVE</div>
+          <div class="mode-desc">
+            Survive escalating waves of aircraft. Laser unlocks at wave 3.
+            Clear all waves to win.
+          </div>
+        </button>
+        <button class="mode-btn" data-mode="sandbox">
+          <div class="mode-title">SANDBOX</div>
+          <div class="mode-desc">
+            Free play. All weapons unlocked. Spawn planes on demand with
+            Z / X / C.
+          </div>
+        </button>
+      </div>
+
+      <button id="resume-btn" class="hidden">Resume</button>
+
+      <div class="controls">
+        <b>WASD</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp;
+        <b>Shift</b> sprint &nbsp;·&nbsp; <b>Space</b> jump<br />
+        <b>Left Click</b> / <b>N</b> fire &nbsp;·&nbsp;
+        <b>Right Click</b> (hold) / <b>M</b> (toggle) scope &nbsp;·&nbsp;
+        <b>R</b> reload &nbsp;·&nbsp; <b>1</b>/<b>2</b> switch weapon &nbsp;·&nbsp;
+        <b>Esc</b> pause
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
