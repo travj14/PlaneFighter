@@ -9,6 +9,7 @@ import { ViewModel } from '../weapons/ViewModel.js';
 import { Scope } from '../weapons/Scope.js';
 import { AircraftManager } from '../enemies/AircraftManager.js';
 import { WaveDirector } from '../enemies/WaveDirector.js';
+import { Minimap } from '../ui/Minimap.js';
 import { HUD } from '../ui/HUD.js';
 
 // Owns the renderer, scene, camera, the core systems, and the main loop.
@@ -85,6 +86,8 @@ export class Game {
       weapons: this.weapons,
       onWin: () => this._onWin(),
     });
+
+    this.minimap = new Minimap(document.getElementById('minimap'), this.arena.half);
 
     // Session state. A session starts when a mode is chosen on the home screen.
     this.mode = 'sandbox';
@@ -209,6 +212,7 @@ export class Game {
       this.aircraftManager.update(dt, this.time);
       this.waveDirector.update(dt);
       this.effects.update(dt);
+      this.minimap.update(this.player, this.aircraftManager.aircraft);
 
       this.hud.setHealth(this.player.health, this.player.maxHealth);
       this.hud.setReticleOpacity(1 - ads);

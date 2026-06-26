@@ -19,6 +19,7 @@ export class Aircraft {
     this.done = false; // flagged for removal (killed or exited)
     this.age = 0;
     this.maxAge = 32; // safety despawn (seconds)
+    this.boundaryRadius = Infinity; // set on spawn; planes are curved back inside it
 
     this.hitFlash = 0;
     this.materials = []; // standard materials that flash on hit
@@ -28,6 +29,7 @@ export class Aircraft {
     this.health = 1;
     this.maxHealth = 1;
     this.score = 100;
+    this.kind = 'normal'; // minimap colour tag
 
     this._lookTarget = new THREE.Vector3();
 
@@ -160,9 +162,23 @@ export class Aircraft {
     if (this.age > this.maxAge) this.done = true;
 
     this._behavior(dt, ctx);
+    this._containWithinIsland(dt);
     this.position.addScaledVector(this.velocity, dt);
     this._orient();
     this._common(dt);
+  }
+
+  // Keep aircraft near the island: once beyond the boundary radius, gently
+  // curve the horizontal velocity back toward the centre (no teleport/despawn).
+  _containWithinIsland(dt) {
+    const r = Math.hypot(this.position.x, this.position.z);
+    if (r <= this.boundaryRadius) return;
+    const inX = -this.position.x / r;
+    const inZ = -this.position.z / r;
+    const sp = Math.hypot(this.velocity.x, this.velocity.z) || 1;
+    const k = Math.min(1, dt * 1.5);
+    this.velocity.x += (inX * sp - this.velocity.x) * k;
+    this.velocity.z += (inZ * sp - this.velocity.z) * k;
   }
 
   // Subclasses override:
@@ -187,6 +203,9 @@ export class Aircraft {
     const dir = Math.random() < 0.5 ? 1 : -1;
     const alongZ = (Math.random() * 2 - 1) * half * 0.8;
     this.position.set(-dir * (half + 45), altitude, alongZ);
+    // Planes spawn just outside the arena (half + 45); allow a bit beyond that
+    // before curving them back, so they stay close to the island.
+    this.boundaryRadius = half + 70;
     return dir; // travelling toward +x * dir
   }
 }

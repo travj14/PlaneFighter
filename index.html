@@ -136,6 +136,16 @@
         margin-top: 2px;
       }
 
+      /* minimap / radar (bottom right) */
+      #minimap {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        width: 150px;
+        height: 150px;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+      }
+
       /* weapon switcher bar (bottom center) */
       #weapon-bar {
         position: absolute;
@@ -380,6 +390,8 @@
           <div id="weapon-name">AR</div>
         </div>
       </div>
+
+      <canvas id="minimap" width="200" height="200"></canvas>
 
       <div id="center-msg"></div>
 

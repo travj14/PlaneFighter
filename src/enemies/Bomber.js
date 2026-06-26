@@ -10,6 +10,7 @@ import { Aircraft } from './Aircraft.js';
 export class Bomber extends Aircraft {
   constructor(scene, effects) {
     super(scene, effects);
+    this.kind = 'bomber';
     this.health = this.maxHealth = 160;
     this.score = 300;
     this._buildPlaneModel({ bodyColor: 0x4d5560, wingColor: 0x3c424b, length: 12, wingspan: 16 });

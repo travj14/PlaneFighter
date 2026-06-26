@@ -47,15 +47,23 @@ export class NormalPlane extends Aircraft {
   }
 
   _pickEgressPoint(player) {
-    // A far, high point in a random direction — the limited turn rate makes the
-    // plane arc out to it and then curve back around for another run.
+    // A moderate, high point in a random direction — close enough that the
+    // plane stays near the island, then curves back around for another run.
     const ang = Math.random() * Math.PI * 2;
-    const r = 200 + Math.random() * 40;
+    const r = 130 + Math.random() * 40;
     this.waypoint.set(
       player.position.x + Math.cos(ang) * r,
       55 + Math.random() * 25,
       player.position.z + Math.sin(ang) * r
     );
+  }
+
+  // Clamp the velocity's vertical angle so the plane can't pitch beyond
+  // ±maxDeg from horizontal (prevents it from flying straight up/down).
+  _clampPitch(maxDeg) {
+    const horiz = Math.hypot(this.velocity.x, this.velocity.z);
+    const maxVy = horiz * Math.tan((maxDeg * Math.PI) / 180);
+    this.velocity.y = Math.max(-maxVy, Math.min(maxVy, this.velocity.y));
   }
 
   // Rotate the velocity toward a desired direction, capped by the turn rate.
@@ -88,6 +96,9 @@ export class NormalPlane extends Aircraft {
       this.velocity.y = Math.max(this.velocity.y, this.speed * 0.4);
     }
 
+    // Fighters fly mostly level — never pitch more than 25° up or down.
+    this._clampPitch(25);
+
     if (this.state === 'attack') {
       // Close pass complete: within point-blank range, or we've passed the
       // player (heading now points away from them).
@@ -99,7 +110,7 @@ export class NormalPlane extends Aircraft {
       this._maybeShoot(dt, ctx, toPlayer, dist);
     } else {
       // Egress: once far enough out, curve back in for another run.
-      if (dist > 190) {
+      if (dist > 120) {
         this._pickAttackPoint(player);
         this.state = 'attack';
       }
