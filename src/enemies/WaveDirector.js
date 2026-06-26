@@ -5,12 +5,25 @@
 const N = 'NormalPlane';
 const K = 'KamikazePlane';
 const B = 'Bomber';
+const J = 'Jet';
 
+// Waves 1-5: fighters + kamikazes only. Waves 6-10: all plane types.
+// Spawn interval tightens as the waves escalate.
 const WAVES = [
-  { spawns: [N, N, N, N], interval: 2.0 },
-  { spawns: [N, N, N, K, K, K], interval: 1.8 },
-  { spawns: [N, N, N, N, K, K, K, K, B], interval: 1.6 },
+  { spawns: [N, N, N, N], interval: 2.0 }, // 1
+  { spawns: [N, N, N, N, K, K], interval: 1.9 }, // 2
+  { spawns: [N, N, N, N, K, K, K], interval: 1.8 }, // 3 — ammo
+  { spawns: [N, N, N, N, N, K, K, K, K], interval: 1.7 }, // 4
+  { spawns: [N, N, N, N, N, K, K, K, K, K], interval: 1.6 }, // 5 — laser + ammo
+  { spawns: [N, N, N, K, K, K, J, J, B], interval: 1.6 }, // 6 — all types
+  { spawns: [N, N, N, K, K, K, K, J, J, J, B], interval: 1.5 }, // 7
+  { spawns: [N, N, N, N, K, K, K, K, J, J, J, B, B], interval: 1.4 }, // 8 — ammo
+  { spawns: [N, N, N, N, K, K, K, K, K, J, J, J, J, B, B], interval: 1.3 }, // 9
+  { spawns: [N, N, N, N, N, K, K, K, K, K, K, J, J, J, J, B, B, B], interval: 1.2 }, // 10 — ammo
 ];
+
+const LASER_WAVE = 5;
+const REFILL_WAVES = new Set([3, 5, 8, 10]);
 
 export class WaveDirector {
   constructor({ manager, hud, weapons, onWin }) {
@@ -49,8 +62,12 @@ export class WaveDirector {
     }
     this.phase = 'intermission';
     this.timer = time;
-    const sub = next === 3 ? 'LASER UNLOCKED — press 2' : 'Get ready';
-    this.hud.showMessage(`WAVE ${next}`, sub, time * 1000 - 200);
+
+    const bits = [];
+    if (next === LASER_WAVE) bits.push('Laser unlocked');
+    if (REFILL_WAVES.has(next)) bits.push('Ammo resupplied');
+    const sub = bits.length ? bits.join(' · ') : 'Get ready';
+    this.hud.showMessage(`WAVE ${next} OF ${WAVES.length}`, sub, time * 1000 - 200);
   }
 
   _startWave() {
@@ -61,7 +78,9 @@ export class WaveDirector {
     this.spawnInterval = w.interval;
     this.spawnTimer = 0;
     this.hud.setWave(this.wave);
-    if (this.wave >= 3) this.weapons.unlockWeapon('LASER');
+
+    if (this.wave >= LASER_WAVE) this.weapons.unlockWeapon('LASER');
+    if (REFILL_WAVES.has(this.wave)) this.weapons.refillAmmo();
   }
 
   update(dt) {

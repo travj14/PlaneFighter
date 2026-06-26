@@ -96,6 +96,19 @@ export class WeaponSystem {
     this.hud?.setWeaponLocked(key, false);
   }
 
+  // Top up every weapon's magazine + reserve (mid-session resupply), leaving
+  // locks, the current weapon, and any charge untouched.
+  refillAmmo() {
+    for (const key of WEAPON_ORDER) {
+      const st = this.states[key];
+      st.mag = st.def.magSize;
+      st.reserve = st.def.reserveAmmo;
+      st.reloading = false;
+      st.reloadTimer = 0;
+    }
+    this._refreshHud();
+  }
+
   // Refill all weapons, clear locks, and reset to the default weapon.
   reset() {
     for (const key of WEAPON_ORDER) {

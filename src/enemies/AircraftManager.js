@@ -1,6 +1,7 @@
 import { NormalPlane } from './NormalPlane.js';
 import { KamikazePlane } from './KamikazePlane.js';
 import { Bomber } from './Bomber.js';
+import { Jet } from './Jet.js';
 import { Projectile } from './Projectile.js';
 
 // Owns all enemy aircraft + their projectiles. For now it runs a simple
@@ -9,7 +10,7 @@ import { Projectile } from './Projectile.js';
 // each plane's hitbox with the weapon system so they can be shot, applies
 // player damage, and awards score on kills.
 
-const TYPES = { NormalPlane, KamikazePlane, Bomber };
+const TYPES = { NormalPlane, KamikazePlane, Bomber, Jet };
 
 export class AircraftManager {
   constructor({ scene, effects, weapons, player, hud, arena, input, onScore }) {
@@ -77,18 +78,11 @@ export class AircraftManager {
     this.aircraft.push(plane);
   }
 
-  _spawnRandom() {
-    const r = Math.random();
-    if (r < 0.55) this._spawn('NormalPlane');
-    else if (r < 0.85) this._spawn('KamikazePlane');
-    else this._spawn('Bomber');
-  }
-
   _spawnProjectile(opts) {
     this.projectiles.push(new Projectile(this.scene, this.effects, opts));
   }
 
-  // Edge-detected test-spawn keys: Z normal, X kamikaze, C bomber.
+  // Edge-detected summon keys: Z fighter, X kamikaze, C bomber, V jet.
   _handleSpawnKeys() {
     const edge = (code) => {
       const down = this.input.isDown(code);
@@ -99,18 +93,14 @@ export class AircraftManager {
     if (edge('KeyZ')) this._spawn('NormalPlane');
     if (edge('KeyX')) this._spawn('KamikazePlane');
     if (edge('KeyC')) this._spawn('Bomber');
+    if (edge('KeyV')) this._spawn('Jet');
   }
 
   update(dt, time) {
-    // Sandbox-only: test-spawn keys + steady auto-spawn. In wave mode the
-    // WaveDirector drives spawning instead.
+    // Sandbox: planes only appear when summoned with the spawn keys. In wave
+    // mode the WaveDirector drives spawning instead.
     if (this.mode === 'sandbox') {
       this._handleSpawnKeys();
-      this.spawnTimer -= dt;
-      if (this.spawnTimer <= 0 && this.aircraft.length < this.cap) {
-        this.spawnTimer = 2 + Math.random() * 2.5;
-        this._spawnRandom();
-      }
     }
 
     this.ctx.time = time;

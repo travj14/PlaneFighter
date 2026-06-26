@@ -10,19 +10,22 @@ import { Aircraft } from './Aircraft.js';
 export class NormalPlane extends Aircraft {
   constructor(scene, effects) {
     super(scene, effects);
-    this.health = this.maxHealth = 45;
-    this.score = 100;
-    this._buildPlaneModel({ bodyColor: 0x7d8590, wingColor: 0x636a73, length: 6, wingspan: 7 });
-
     this.fireTimer = 1 + Math.random() * 1.2;
     this.waypoint = new THREE.Vector3();
     this.state = 'attack';
-    this.passes = 0;
-    this.maxPasses = 2 + Math.floor(Math.random() * 2); // 2-3 runs, then leave
-    this.leaving = false;
+    this._setup(); // virtual — subclasses (Jet) override stats + model
+  }
 
+  // Stats + model. Overridden by subclasses for variants like the Jet.
+  _setup() {
+    this.health = this.maxHealth = 45;
+    this.score = 100;
+    this.gunDamage = 6;
+    this.gunColor = 0xffe066;
     this.speed = 48 + Math.random() * 12;
     this.turnRate = 0.85 + Math.random() * 0.4; // rad/s — lower = wider circles
+    this.maxAge = 120; // keep looping back rather than despawning
+    this._buildPlaneModel({ bodyColor: 0x7d8590, wingColor: 0x636a73, length: 6, wingspan: 7 });
   }
 
   spawn(arena, player) {
@@ -45,9 +48,9 @@ export class NormalPlane extends Aircraft {
 
   _pickEgressPoint(player) {
     // A far, high point in a random direction — the limited turn rate makes the
-    // plane arc out to it and (if not leaving) curve back around.
+    // plane arc out to it and then curve back around for another run.
     const ang = Math.random() * Math.PI * 2;
-    const r = this.leaving ? 300 : 210;
+    const r = 200 + Math.random() * 40;
     this.waypoint.set(
       player.position.x + Math.cos(ang) * r,
       55 + Math.random() * 25,
@@ -90,17 +93,13 @@ export class NormalPlane extends Aircraft {
       // player (heading now points away from them).
       const passed = this.velocity.dot(toPlayer) < 0;
       if (dist < 22 || (passed && dist < 70)) {
-        this.passes++;
-        if (this.passes >= this.maxPasses) this.leaving = true;
         this._pickEgressPoint(player);
         this.state = 'egress';
       }
       this._maybeShoot(dt, ctx, toPlayer, dist);
     } else {
-      // Egress: once far enough out, dive back in — unless leaving for good.
-      if (this.leaving) {
-        if (dist > 260) this.done = true;
-      } else if (dist > 190) {
+      // Egress: once far enough out, curve back in for another run.
+      if (dist > 190) {
         this._pickAttackPoint(player);
         this.state = 'attack';
       }
@@ -123,8 +122,8 @@ export class NormalPlane extends Aircraft {
       type: 'bullet',
       position: this.position.clone(),
       velocity: dir.multiplyScalar(150),
-      damage: 6,
-      color: 0xffe066,
+      damage: this.gunDamage,
+      color: this.gunColor,
     });
   }
 }

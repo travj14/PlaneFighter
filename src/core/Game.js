@@ -162,7 +162,11 @@ export class Game {
     } else {
       this.waveDirector.stop();
       this.hud.setWave('—');
-      this.hud.showMessage('SANDBOX', 'Z fighter · X kamikaze · C bomber', 2200);
+      this.hud.showMessage(
+        'SANDBOX',
+        'Summon: Z fighter · V jet · X kamikaze · C bomber',
+        2600
+      );
     }
   }
 
