@@ -8,6 +8,9 @@ dist/
 *.log
 npm-debug.log*
 
+# Runtime
+.planefighter.pid
+
 # OS / editor
 .DS_Store
 .vscode/
