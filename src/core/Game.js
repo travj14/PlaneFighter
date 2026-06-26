@@ -125,6 +125,10 @@ export class Game {
     });
   }
 
+  setSensitivity(multiplier) {
+    this.player.sensMultiplier = multiplier;
+  }
+
   start() {
     if (this.running) return;
     this.running = true;

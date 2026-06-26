@@ -317,6 +317,26 @@
       #resume-btn.hidden {
         display: none;
       }
+      .settings {
+        margin-top: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: #cfe0f0;
+        letter-spacing: 1px;
+      }
+      .settings input[type="range"] {
+        width: 220px;
+        accent-color: #6fb7ff;
+        cursor: pointer;
+      }
+      .settings #sens-val {
+        min-width: 52px;
+        text-align: left;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+      }
       #overlay .controls {
         margin-top: 30px;
         color: #aebfd1;
@@ -397,6 +417,12 @@
       </div>
 
       <button id="resume-btn" class="hidden">Resume</button>
+
+      <div class="settings">
+        <label for="sens">Mouse sensitivity</label>
+        <input type="range" id="sens" min="0.2" max="3" step="0.05" value="1" />
+        <span id="sens-val">1.00×</span>
+      </div>
 
       <div class="controls">
         <b>WASD</b> move &nbsp;·&nbsp; <b>Mouse</b> look &nbsp;·&nbsp;

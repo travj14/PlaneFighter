@@ -16,6 +16,7 @@ export class Player {
     this.recoilPitch = 0; // transient upward kick from firing
 
     this.lookScale = 1; // sensitivity multiplier (reduced while aiming)
+    this.sensMultiplier = 1; // user-configurable sensitivity setting
     this.lookDX = 0; // last frame's mouse delta (for weapon sway)
     this.lookDY = 0;
 
@@ -40,7 +41,7 @@ export class Player {
     const { dx, dy } = this.input.consumeMouseDelta();
     this.lookDX = dx;
     this.lookDY = dy;
-    const sens = PLAYER.lookSensitivity * this.lookScale;
+    const sens = PLAYER.lookSensitivity * this.lookScale * this.sensMultiplier;
     this.yaw -= dx * sens;
     this.pitch -= dy * sens;
     const limit = PLAYER.pitchLimit;

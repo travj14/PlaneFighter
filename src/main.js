@@ -9,6 +9,24 @@ const modeButtons = document.querySelectorAll('.mode-btn');
 const game = new Game(container);
 game.start();
 
+// --- Mouse sensitivity setting (persisted) ---
+const sensInput = document.getElementById('sens');
+const sensVal = document.getElementById('sens-val');
+const savedSens = parseFloat(localStorage.getItem('pf_sensitivity') || '1') || 1;
+
+function applySensitivity(v) {
+  sensInput.value = v;
+  sensVal.textContent = `${v.toFixed(2)}×`;
+  game.setSensitivity(v);
+}
+applySensitivity(savedSens);
+
+sensInput.addEventListener('input', () => {
+  const v = parseFloat(sensInput.value);
+  applySensitivity(v);
+  localStorage.setItem('pf_sensitivity', String(v));
+});
+
 // Pick a mode on the home screen → start a fresh session and lock the pointer.
 function startMode(mode) {
   resultEl.textContent = '';

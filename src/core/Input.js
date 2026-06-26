@@ -17,6 +17,7 @@ export class Input {
     this.mouseDY = 0;
 
     this.locked = false;
+    this._skipNextMove = false; // drop the spiky first event after locking
 
     // Optional callbacks.
     this.onLockChange = null;
@@ -35,8 +36,17 @@ export class Input {
 
     document.addEventListener('mousemove', (e) => {
       if (!this.locked) return;
-      this.mouseDX += e.movementX || 0;
-      this.mouseDY += e.movementY || 0;
+      // The first event after pointer-lock can carry a huge jump — discard it.
+      if (this._skipNextMove) {
+        this._skipNextMove = false;
+        return;
+      }
+      // Clamp to filter rare rogue spikes; raw (unaccelerated) movement keeps
+      // turns consistent regardless of how fast the mouse is moved.
+      const MAX = 250;
+      const clamp = (v) => Math.max(-MAX, Math.min(MAX, v || 0));
+      this.mouseDX += clamp(e.movementX);
+      this.mouseDY += clamp(e.movementY);
     });
 
     document.addEventListener('mousedown', (e) => {
@@ -54,7 +64,9 @@ export class Input {
 
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === this.dom;
-      if (!this.locked) {
+      if (this.locked) {
+        this._skipNextMove = true;
+      } else {
         this.mouseDown = false;
         this.mouseRightDown = false;
       }
@@ -63,7 +75,16 @@ export class Input {
   }
 
   requestLock() {
-    this.dom.requestPointerLock?.();
+    const el = this.dom;
+    if (!el.requestPointerLock) return;
+    // Request raw, unaccelerated movement so sensitivity is consistent (no OS
+    // mouse acceleration making fast flicks disproportionately large).
+    try {
+      const r = el.requestPointerLock({ unadjustedMovement: true });
+      if (r && typeof r.then === 'function') r.catch(() => el.requestPointerLock());
+    } catch {
+      el.requestPointerLock();
+    }
   }
 
   isDown(code) {
